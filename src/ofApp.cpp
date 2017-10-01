@@ -1,7 +1,5 @@
-#include <iostream>
 #include <math.h>
 #include "ofApp.h"
-
 
 //--------------------------------------------------------------
 void ofApp::setup() {
@@ -10,8 +8,6 @@ void ofApp::setup() {
     
     // repatable randomness
     ofSeedRandom();
-    
-    // simulation specific stuff goes here
 
     gui.setup();
     ImGui::GetIO().MouseDrawCursor = false;
@@ -21,21 +17,18 @@ void ofApp::setup() {
     
     // instantiate the ground
     ground.set(RANGE, RANGE);
-    ground.rotate(90, 1,0,0);
+    ground.rotate(90, 1, 0, 0);
     
     // lift camera to 'eye' level
     easyCam.setDistance(RANGE);
     float d = easyCam.getDistance();
     easyCam.setPosition(ofVec3f(0, cameraHeightRatio*d, d*sqrt(1.0f-cameraHeightRatio*cameraHeightRatio))+easyCamTarget);
     easyCam.setTarget(easyCamTarget);
-
-    // simulation specific stuff goes here
     
     string gameStateLabels[] = {"START", "PLAY", "FIRED", "HIT"};
     gameStates.assign(gameStateLabels, gameStateLabels+4);
     gameState = START;
     
-    target.set(ofRandom(1) * 10.0f - 5.0f, 0, ofRandom(1) * 10.0f - 5.0f);
     muzzleSpeed = 4.0f;
     ball.setBodyColor(ofColor(0x666666));
     reset();
@@ -53,7 +46,7 @@ void ofApp::reset() {
 
     t = 0.0f;
     
-    target.set(ofRandom(1) * 10.0f - 5.0f, 0, ofRandom(1) * 10.0f - 5.0f);
+    target.set(ofRandom(1) * 15.0f - 7.5f, 0, ofRandom(1) * 15.0f - 7.5f);
     ball.force = ofVec3f();
     ball.acceleration = ofVec3f();
     ball.velocity = ofVec3f();
