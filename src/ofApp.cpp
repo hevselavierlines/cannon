@@ -66,33 +66,33 @@ void ofApp::update() {
     if (!isRunning) return;
     t += dt;
 
-    // simulation specific stuff goes here
     if(dt > 0) {
         if(ball.position.y > 0) {
+            //Position over zero means that the ball is still in the air.
             ball.applyForce(ofVec3f(0, -0.981f, 0));
         } else {
+            //Position below or equal zero means that the ball has hit the floor.
             if(ball.position.y < 0) {
                 gameState = HIT;
             }
             ball.velocity = ofVec3f(0, 0, 0);
             ball.position.y = 0;
         }
+        // update the track "balls"
         for(int i = balls.size() - 1; i >= 0; i--) {
             balls[i + 1].position.x = balls[i].position.x;
             balls[i + 1].position.y = balls[i].position.y;
             balls[i + 1].position.z = balls[i].position.z;
         }
+        // set the first item of the "track" balls to the current position.
         balls[0].position.x = ball.position.x;
         balls[0].position.y = ball.position.y;
         balls[0].position.z = ball.position.z;
         ball.integrate(dt);
-    } else {
     }
 }
 
 void ofApp::draw() {
-    
- 
     ofEnableDepthTest();
     ofBackgroundGradient(ofColor(128), ofColor(0), OF_GRADIENT_BAR);
     
@@ -128,18 +128,18 @@ void ofApp::draw() {
     ofSetColor(255, 128, 0);
     ofDrawCylinder(0, 1.0, 0, 0.15, 1);
     ofPopMatrix();
-
+    //reset color.
     ofSetColor(0, 0, 0);
     ofDrawBox(target.x, 0, target.z, 1, 0.1, 1);
-    
+    //this draws the current ball
     ball.draw();
+    //this draws the track of the balls
     for(int i = 0; i < balls.size(); i++) {
         balls[i].draw();
     }
     
     ofPopStyle();
 
-    
     easyCam.end();
     ofPopStyle();
 
@@ -149,10 +149,7 @@ void ofApp::draw() {
     drawMainWindow();
     drawLoggingWindow();
     
-    
     gui.end();
-    
-    
 }
 
 
@@ -368,9 +365,10 @@ void ofApp::aim() {
     direct.y = target.y;
     direct.z = target.z;
     direct.normalize();
-    
+    //with the atan2 function the angle can be gathered by the vector data.
     float angle = atan2(direct.x,direct.z) / 0.0174533f - 90.0f;
-    if (angle < 0) {
+    //correct angles below zero.
+    while (angle < 0) {
         angle += 360;
     }
     direction = angle;
@@ -380,16 +378,23 @@ void ofApp::aim() {
     elevation = calcAngle;
 }
 
+/**
+ * The range function estimates the distance of the ball with the given angle.
+ * @param e this is the given angle in degrees.
+ */
 float ofApp::range(float e) {
     float ux = muzzleSpeed * cos(e * 0.0174533f);
     float uy = muzzleSpeed * sin(e * 0.0174533f);
     float h = 0.7;
     float g = 0.981;
     
-    float calcDistance = ( ux / g ) *( uy + sqrt ( uy*uy + 2*g*h ) ) ;
+    float calcDistance = ( ux / g ) * ( uy + sqrt ( uy*uy + 2*g*h ) ) ;
     return calcDistance;
 }
-
+/**
+ * This function tries to get the right angle with trying by trying the 
+ * {@code range(e)} function.
+ */
 float ofApp::calculateElevation(float targetDistance) {
     float xMin(0.0f), fxMin(targetDistance - range(xMin));
     float xMax(90.0f), fxMax(targetDistance - range(xMax));
@@ -408,6 +413,10 @@ float ofApp::calculateElevation(float targetDistance) {
     }
     return 0.5 * (xMin + xMax);
 }
+
+/**
+ * The fire function fires the cannon and sets the game state accordingly.
+ */
 void ofApp::fire() {
     ball.position = ofVec3f(0, 0.7, 0);
     ball.velocity = ofVec3f(0, 0, 0);
