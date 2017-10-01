@@ -117,7 +117,7 @@ const String Particle::toString() const {
 }
 
 void Particle::draw() {
-    
+    ofSetColor(bodyColor);
     ofDrawSphere(position, radius);
     if (forceVisible) {
         ofDrawArrow(position, position+force);

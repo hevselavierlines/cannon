@@ -37,7 +37,16 @@ void ofApp::setup() {
     
     target.set(ofRandom(1) * 10.0f - 5.0f, 0, ofRandom(1) * 10.0f - 5.0f);
     muzzleSpeed = 4.0f;
+    ball.setBodyColor(ofColor(0x666666));
     reset();
+    balls.reserve(100);
+    for(int i = 0; i < 100; i++) {
+        YAMPE::Particle partBall;
+        partBall.setBodyColor(ofColor(0x444444));
+        float num = (100 - i) * 0.001;
+        partBall.setRadius(num);
+        balls.push_back(partBall);
+    }
 }
 
 void ofApp::reset() {
@@ -68,9 +77,16 @@ void ofApp::update() {
             ball.velocity = ofVec3f(0, 0, 0);
             ball.position.y = 0;
         }
+        for(int i = balls.size() - 1; i >= 0; i--) {
+            balls[i + 1].position.x = balls[i].position.x;
+            balls[i + 1].position.y = balls[i].position.y;
+            balls[i + 1].position.z = balls[i].position.z;
+        }
+        balls[0].position.x = ball.position.x;
+        balls[0].position.y = ball.position.y;
+        balls[0].position.z = ball.position.z;
         ball.integrate(dt);
     } else {
-        std::cout << "JONAS\n";
     }
 }
 
@@ -116,8 +132,10 @@ void ofApp::draw() {
     ofSetColor(0, 0, 0);
     ofDrawBox(target.x, 0, target.z, 1, 0.1, 1);
     
-    ofSetColor(0, 255, 255);
     ball.draw();
+    for(int i = 0; i < balls.size(); i++) {
+        balls[i].draw();
+    }
     
     ofPopStyle();
 
@@ -204,7 +222,7 @@ void ofApp::drawMainWindow() {
             if (ImGui::SliderFloat("Camera Height Ratio", &cameraHeightRatio, 0.0f, 1.0f))
                 cameraHeightRatioChanged(cameraHeightRatio);
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            
+            ImGui::SliderFloat("MuzzleSpeed", &muzzleSpeed, 3.0f, 5.0f, "%2.2f (m/s)");
             ImGui::SliderFloat("Elevation", &elevation, 0.0f, 90.0f, "%3.0f (deg)", 1);
             ImGui::SliderFloat("Direction", &direction, 0.0f, 360.0f, "%3.0f (deg)", 1);
             if(ImGui::Button("Aim")) aim();
@@ -369,7 +387,6 @@ float ofApp::range(float e) {
     float g = 0.981;
     
     float calcDistance = ( ux / g ) *( uy + sqrt ( uy*uy + 2*g*h ) ) ;
-    //calcDistance /= 10000;
     return calcDistance;
 }
 
