@@ -35,7 +35,7 @@ void ofApp::setup() {
     balls.reserve(100);
     for(int i = 0; i < 100; i++) {
         YAMPE::Particle partBall;
-        partBall.setBodyColor(ofColor(0x444444));
+        partBall.setBodyColor(ofColor(255, 28 + i, 0));
         float num = (100 - i) * 0.001;
         partBall.setRadius(num);
         balls.push_back(partBall);
@@ -124,12 +124,13 @@ void ofApp::draw() {
     //reset color.
     ofSetColor(0, 0, 0);
     ofDrawBox(target.x, 0, target.z, 1, 0.1, 1);
-    //this draws the current ball
-    ball.draw();
     //this draws the track of the balls
     for(int i = 0; i < balls.size(); i++) {
         balls[i].draw();
     }
+    
+    //this draws the current ball
+    ball.draw();
     
     ofPopStyle();
 
