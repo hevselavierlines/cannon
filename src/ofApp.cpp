@@ -32,14 +32,25 @@ void ofApp::setup() {
     muzzleSpeed = 4.0f;
     ball.setBodyColor(ofColor(0x666666));
     reset();
-    balls.reserve(100);
-    for(int i = 0; i < 100; i++) {
+    balls.reserve(128);
+    for(int i = 0; i < 128; i++) {
         YAMPE::Particle partBall;
-        partBall.setBodyColor(ofColor(255, 28 + i, 0));
-        float num = (100 - i) * 0.001;
+        partBall.setBodyColor(ofColor(255, i * 2, 0));
+        float num = (128 - i) * 0.001;
         partBall.setRadius(num);
         balls.push_back(partBall);
     }
+    int lineLength = 1000;
+    heightLine.reserve(lineLength);
+    velocityLine.reserve(lineLength);
+    energyLine.reserve(lineLength);
+    for(int i = 0; i < lineLength; i++) {
+        heightLine.push_back(0);
+        velocityLine.push_back(0);
+        energyLine.push_back(0);
+    }
+    
+    energyError = 0;
 }
 
 void ofApp::reset() {
@@ -82,6 +93,14 @@ void ofApp::update() {
         balls[0].position.y = ball.position.y;
         balls[0].position.z = ball.position.z;
         ball.integrate(dt);
+        for(int i = 0; i < heightLine.size() - 1; i++) {
+            heightLine[i] = heightLine[i + 1];
+            velocityLine[i] = velocityLine[i + 1];
+            energyLine[i] = energyLine[i + 1];
+        }
+        heightLine[heightLine.size() - 1] = ball.position.y;
+        velocityLine[velocityLine.size() - 1] = ball.velocity.length();
+        energyLine[energyLine.size() - 1] = energyError;
     }
 }
 
@@ -114,9 +133,9 @@ void ofApp::draw() {
     ofPushMatrix();
     ofTranslate(0, 0.5, 0);
     float rightDirection = direction + 90.0f;
-    ofRotate(rightDirection, 0, 1.0, 0);
+    ofRotateY(rightDirection);
     float rightElevation = 90.0f - elevation;
-    ofRotate(rightElevation, 1.0, 0, 0);
+    ofRotateX(rightElevation);
     ofTranslate(0, -0.5, 0);
     ofSetColor(255, 128, 0);
     ofDrawCylinder(0, 1.0, 0, 0.15, 1);
@@ -235,10 +254,19 @@ void ofApp::drawMainWindow() {
             ImGui::Text("Elevation:     % 5.2f", elevation);
             ImGui::Text("Direction:     % 5.2f", direction);
             ImGui::Text("Game State:    %5s", gameStates[gameState].c_str());
+            ImGui::Text("Ball Position: {%5.2f, %5.2f, %5.2f}", ball.position.x, ball.position.y, ball.position.z);
+            ImGui::Text("Ball Velocity: {%5.2f, %5.2f, %5.2f}", ball.velocity.x, ball.velocity.y, ball.velocity.z);
+            float pe = 9.81f * ball.position.y * ball.mass();
+            float ke = 0.5f * ball.velocity.lengthSquared() * ball.mass();
+            energyError = abs(pe - ke);
+            ImGui::Text("Ball Energy:   {PE: %5.2f, KE: %5.2f, Error: %5.2f}", pe, ke, energyError);
         }
         
         
         if (ImGui::CollapsingHeader("Graphical Output")) {
+            ImGui::PlotLines("Height", &heightLine[0], heightLine.size());
+            ImGui::PlotLines("Velocity", &velocityLine[0], velocityLine.size());
+            ImGui::PlotHistogram("Energy Error", &energyLine[0], energyLine.size());
         }
     }
     // store window size so that camera can ignore mouse clicks
@@ -303,6 +331,15 @@ void ofApp::keyPressed(int key) {
 //            gui.loadFromFile("settings.xml");
 //            break;
 //
+        case 'a':
+            aim();
+            break;
+        case 's':
+            fire();
+            break;
+        case 'r':
+            reset();
+            break;
         case 'z':
             easyCam.setPosition(ofVec3f(0, cameraHeightRatio*d, d*sqrt(1.0f-cameraHeightRatio*cameraHeightRatio))+easyCamTarget);
             easyCam.setTarget(easyCamTarget);
@@ -379,7 +416,7 @@ void ofApp::aim() {
 float ofApp::range(float e) {
     float ux = muzzleSpeed * cos(e * 0.0174533f);
     float uy = muzzleSpeed * sin(e * 0.0174533f);
-    float h = 0.7;
+    float h = 0.5;
     float g = 0.981;
     
     float calcDistance = ( ux / g ) * ( uy + sqrt ( uy*uy + 2*g*h ) ) ;
@@ -412,7 +449,7 @@ float ofApp::calculateElevation(float targetDistance) {
  * The fire function fires the cannon and sets the game state accordingly.
  */
 void ofApp::fire() {
-    ball.position = ofVec3f(0, 0.7, 0);
+    ball.position = ofVec3f(0, 0.5, 0);
     ball.velocity = ofVec3f(0, 0, 0);
     ball.acceleration = ofVec3f(0, 0, 0);
     

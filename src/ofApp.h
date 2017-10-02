@@ -73,11 +73,15 @@ public:
     YAMPE::Particle ball;
     vector<YAMPE::Particle> balls;
     ofVec3f target;         //< target - note y coordinate is zero
+    float energyError;
     
     void aim();
     void fire();
     float range(float e);
     float calculateElevation(float targetDistance);
+    vector<float> heightLine;
+    vector<float> velocityLine;
+    vector<float> energyLine;
 private:
 
     // or here
