@@ -101,16 +101,16 @@ void ofApp::update() {
         /**
          * Move all the historic line points one position to the left.
          */
-        velocityLine[0] = 0;
-        energyLine[0] = 0;
-        heightLine[0] = 0;
+        velocityLine[0] = 0.0f;
+        energyLine[0] = 0.0f;
+        heightLine[0] = 0.0f;
         for(int i = 0; i < heightLine.size() - 1; i++) {
             heightLine[i] = heightLine[i + 1];
             velocityLine[i] = velocityLine[i + 1];
             energyLine[i] = energyLine[i + 1];
         }
         heightLine[heightLine.size() - 1] = ball.position.y;
-        velocityLine[velocityLine.size() - 1] = ball.velocity.length();
+        velocityLine[velocityLine.size() - 1] = ball.position.x;
         energyLine[energyLine.size() - 1] = ball.errorEnergy;
     }
 }
@@ -258,7 +258,6 @@ void ofApp::drawMainWindow() {
         ImGui::Text("   Time = %8.1f", t);
         if(ImGui::Button("Quit")) {quit();}
         
-        
         if (ImGui::CollapsingHeader("Numerical Output")) {
             // Display some useful info
             ImGui::Text("Elevation:     % 5.2f", elevation);
@@ -266,13 +265,16 @@ void ofApp::drawMainWindow() {
             ImGui::Text("Game State:    %5s", gameStates[gameState].c_str());
             ImGui::Text("Ball Position: {%5.2f, %5.2f, %5.2f}", ball.position.x, ball.position.y, ball.position.z);
             ImGui::Text("Ball Velocity: {%5.2f, %5.2f, %5.2f}", ball.velocity.x, ball.velocity.y, ball.velocity.z);
-            ImGui::Text("Ball Energy:   {PE: %5.2f, KE: %5.2f, Error: %5.2f}", ball.potentialEnergy, ball.kineticEnergy, ball.errorEnergy);
+            ImGui::Text("Ball Energy:\n"
+                        "Potential: %5.2f J\n"
+                        "Kinetic: %5.2f J\n "
+                        "Total: %5.2f J", ball.potentialEnergy, ball.kineticEnergy, ball.potentialEnergy + ball.kineticEnergy);
+            ImGui::Text("Distance to target: %5.2f", ball.position.distance(target));
         }
         
-        
         if (ImGui::CollapsingHeader("Graphical Output")) {
-            ImGui::PlotLines("Height", &heightLine[0], heightLine.size());
-            ImGui::PlotLines("Velocity", &velocityLine[0], velocityLine.size());
+            ImGui::PlotLines("Height (y)", &heightLine[0], heightLine.size());
+            ImGui::PlotLines("Horizontal (x)", &velocityLine[0], velocityLine.size());
             ImGui::PlotHistogram("Energy Error", &energyLine[0], energyLine.size());
         }
     }
