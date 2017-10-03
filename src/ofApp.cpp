@@ -73,7 +73,7 @@ void ofApp::update() {
     if(dt > 0) {
         if(ball.position.y > 0) {
             //Position over zero means that the ball is still in the air.
-            ball.applyForce(ofVec3f(0, -0.981f, 0));
+            ball.acceleration = ofVec3f(0, -0.981f, 0);
         } else {
             //Position below or equal zero means that the ball has hit the floor.
             if(ball.position.y < 0) {
@@ -93,6 +93,17 @@ void ofApp::update() {
         balls[0].position.y = ball.position.y;
         balls[0].position.z = ball.position.z;
         ball.integrate(dt);
+        
+        ball.potentialEnergy = 9.81f * ball.position.y * ball.mass();
+        ball.kineticEnergy = 0.5f * ball.velocity.lengthSquared() * ball.mass();
+        ball.errorEnergy = abs(ball.potentialEnergy - ball.kineticEnergy);
+        
+        /**
+         * Move all the historic line points one position to the left.
+         */
+        velocityLine[0] = 0;
+        energyLine[0] = 0;
+        heightLine[0] = 0;
         for(int i = 0; i < heightLine.size() - 1; i++) {
             heightLine[i] = heightLine[i + 1];
             velocityLine[i] = velocityLine[i + 1];
@@ -100,7 +111,7 @@ void ofApp::update() {
         }
         heightLine[heightLine.size() - 1] = ball.position.y;
         velocityLine[velocityLine.size() - 1] = ball.velocity.length();
-        energyLine[energyLine.size() - 1] = energyError;
+        energyLine[energyLine.size() - 1] = ball.errorEnergy;
     }
 }
 
@@ -109,7 +120,6 @@ void ofApp::draw() {
     ofBackgroundGradient(ofColor(128), ofColor(0), OF_GRADIENT_BAR);
     
     ofPushStyle();
-    //cout <<"Camera" <<easyCamTarget <<endl;
     easyCam.begin();
     
     ofDrawGrid(RANGE/(2*8), 8, false, isXGridVisible, isYGridVisible, isZGridVisible);
@@ -256,10 +266,7 @@ void ofApp::drawMainWindow() {
             ImGui::Text("Game State:    %5s", gameStates[gameState].c_str());
             ImGui::Text("Ball Position: {%5.2f, %5.2f, %5.2f}", ball.position.x, ball.position.y, ball.position.z);
             ImGui::Text("Ball Velocity: {%5.2f, %5.2f, %5.2f}", ball.velocity.x, ball.velocity.y, ball.velocity.z);
-            float pe = 9.81f * ball.position.y * ball.mass();
-            float ke = 0.5f * ball.velocity.lengthSquared() * ball.mass();
-            energyError = abs(pe - ke);
-            ImGui::Text("Ball Energy:   {PE: %5.2f, KE: %5.2f, Error: %5.2f}", pe, ke, energyError);
+            ImGui::Text("Ball Energy:   {PE: %5.2f, KE: %5.2f, Error: %5.2f}", ball.potentialEnergy, ball.kineticEnergy, ball.errorEnergy);
         }
         
         
@@ -298,39 +305,33 @@ void ofApp::keyPressed(int key) {
     
     switch (key) {
         
-//        case 'h':                               // toggle GUI/HUD
-//           isGuiVisible = !isGuiVisible;
-//            break;
-//        case 'b':                               // toggle debug
-//            isDebugVisible = !isDebugVisible;
-//            break;
-//        case 'a':                               // toggle axis unit vectors
-//            isAxisVisible = !isAxisVisible;
-//            break;
-//        case '1':                               // toggle grids (X)
-//           isXGridVisible = !isXGridVisible;
-//            break;
-//        case '2':                               // toggle grids (Y)
-//            isYGridVisible = !isYGridVisible;
-//            break;
-//        case '3':                               // toggle grids (Z)
-//            isZGridVisible = !isZGridVisible;
-//            break;
-//        case 'g':                               // toggle ground
-//            isGroundVisible = !isGroundVisible;
-//            break;
-//        case 'u':                               // set the up vecetor to be up (ground to be level)
-//            easyCam.setTarget(ofVec3f::zero());
-//            break;
-//
-//        case 'S' :                              // save gui parameters to file
-//            gui.saveToFile("settings.xml");
-//
-//            break;
-//        case 'L' :                              // load gui parameters
-//            gui.loadFromFile("settings.xml");
-//            break;
-//
+        case 'q':                               // toggle axis unit vectors
+            isAxisVisible = !isAxisVisible;
+            break;
+        case '1':                               // toggle grids (X)
+           isXGridVisible = !isXGridVisible;
+            break;
+        case '2':                               // toggle grids (Y)
+            isYGridVisible = !isYGridVisible;
+            break;
+        case '3':                               // toggle grids (Z)
+            isZGridVisible = !isZGridVisible;
+            break;
+        case 'g':                               // toggle ground
+            isGroundVisible = !isGroundVisible;
+            break;
+        case 'u':                               // set the up vecetor to be up (ground to be level)
+            easyCam.setTarget(ofVec3f::zero());
+            break;
+
+ /*       case 'S' :                              // save gui parameters to file
+            gui.saveToFile("settings.xml");
+
+            break;
+        case 'L' :                              // load gui parameters
+            gui.loadFromFile("settings.xml");
+            break;
+*/
         case 'a':
             aim();
             break;
@@ -391,19 +392,15 @@ void ofApp::quit() {
 
 void ofApp::aim() {
     gameState = PLAY;
-    ofVec3f direct;
-    direct.x = target.x;
-    direct.y = target.y;
-    direct.z = target.z;
-    direct.normalize();
+    
+    ofVec3f direct = target.getNormalized();
     //with the atan2 function the angle can be gathered by the vector data.
-    float angle = atan2(direct.x,direct.z) / 0.0174533f - 90.0f;
+    float angle = ofRadToDeg(atan2(direct.x,direct.z)) - 90.0f;
     //correct angles below zero.
     while (angle < 0) {
         angle += 360;
     }
     direction = angle;
-    float r = range(elevation);
     float distance = target.length();
     int calcAngle = calculateElevation(distance);
     elevation = calcAngle;
@@ -414,8 +411,8 @@ void ofApp::aim() {
  * @param e this is the given angle in degrees.
  */
 float ofApp::range(float e) {
-    float ux = muzzleSpeed * cos(e * 0.0174533f);
-    float uy = muzzleSpeed * sin(e * 0.0174533f);
+    float ux = muzzleSpeed * cos(ofDegToRad(e));
+    float uy = muzzleSpeed * sin(ofDegToRad(e));
     float h = 0.5;
     float g = 0.981;
     
@@ -456,9 +453,14 @@ void ofApp::fire() {
     float rightDirection = direction + 90.0f;
     float rightElevation = 90.0f - elevation;
     
-    float dirY = cos(rightElevation * 0.0174533f) * muzzleSpeed;
-    float dirX = sin(rightDirection * 0.0174533f) * sin(rightElevation * 0.0174533) * muzzleSpeed;
-    float dirZ = cos(rightDirection * 0.0174533f) * sin(rightElevation * 0.0174533) * muzzleSpeed;
+    float cosElevation = cos(ofDegToRad(rightElevation));
+    float sinElevation = sin(ofDegToRad(rightElevation));
+    float sinDirection = sin(ofDegToRad(rightDirection));
+    float cosDirection = cos(ofDegToRad(rightDirection));
+    
+    float dirY = cosElevation * muzzleSpeed;
+    float dirX = sinDirection * sinElevation * muzzleSpeed;
+    float dirZ = cosDirection * sinElevation * muzzleSpeed;
     
     ball.setVelocity(ofVec3f(dirX, dirY, dirZ));
     

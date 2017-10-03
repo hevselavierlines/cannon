@@ -40,6 +40,9 @@ public:
     ofVec3f position;			///< Particle position.
     ofVec3f velocity;			///< Particle velocity (rate of change of position).
     ofVec3f acceleration;		///< Particle acceleration (rate of change of velocity).
+    float potentialEnergy;      ///< Particle potential energy
+    float kineticEnergy;        ///< Particle kinetic energy
+    float errorEnergy;          ///< Particle energy error.
     
     /**
      Default particle has an inverse mass and damping of values of one and
