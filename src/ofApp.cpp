@@ -34,10 +34,10 @@ void ofApp::setup() {
     reset();
     balls.reserve(128);
     for(int i = 0; i < 128; i++) {
-        YAMPE::Particle partBall;
-        partBall.setBodyColor(ofColor(255, i * 2, 0));
-        float num = (128 - i) * 0.001;
-        partBall.setRadius(num);
+        YAMPE::Particle::Ref partBall(new YAMPE::Particle());
+        partBall->setBodyColor(ofColor(255, i * 2, 0));
+        float num = (128 - i) * 0.00078125;
+        partBall->setRadius(num);
         balls.push_back(partBall);
     }
     int lineLength = 1000;
@@ -83,15 +83,15 @@ void ofApp::update() {
             ball.position.y = 0;
         }
         // update the track "balls"
-        for(int i = balls.size() - 1; i >= 0; i--) {
-            balls[i + 1].position.x = balls[i].position.x;
-            balls[i + 1].position.y = balls[i].position.y;
-            balls[i + 1].position.z = balls[i].position.z;
+        for(int i = balls.size() - 2; i >= 0; i--) {
+            balls[i + 1]->position.x = balls[i]->position.x;
+            balls[i + 1]->position.y = balls[i]->position.y;
+            balls[i + 1]->position.z = balls[i]->position.z;
         }
         // set the first item of the "track" balls to the current position.
-        balls[0].position.x = ball.position.x;
-        balls[0].position.y = ball.position.y;
-        balls[0].position.z = ball.position.z;
+        balls[0]->position.x = ball.position.x;
+        balls[0]->position.y = ball.position.y;
+        balls[0]->position.z = ball.position.z;
         ball.integrate(dt);
         
         ball.potentialEnergy = 9.81f * ball.position.y * ball.mass();
@@ -155,7 +155,7 @@ void ofApp::draw() {
     ofDrawBox(target.x, 0, target.z, 1, 0.1, 1);
     //this draws the track of the balls
     for(int i = 0; i < balls.size(); i++) {
-        balls[i].draw();
+        balls[i]->draw();
     }
     
     //this draws the current ball
@@ -273,8 +273,8 @@ void ofApp::drawMainWindow() {
         }
         
         if (ImGui::CollapsingHeader("Graphical Output")) {
-            ImGui::PlotLines("Height (y)", &heightLine[0], heightLine.size());
-            ImGui::PlotLines("Horizontal (x)", &velocityLine[0], velocityLine.size());
+            ImGui::PlotHistogram("Height (y)", &heightLine[0], heightLine.size());
+            ImGui::PlotHistogram("Horizontal (x)", &velocityLine[0], velocityLine.size());
             ImGui::PlotHistogram("Energy Error", &energyLine[0], energyLine.size());
         }
     }
@@ -403,7 +403,7 @@ void ofApp::aim() {
         angle += 360;
     }
     direction = angle;
-    float distance = target.length();
+    float distance = target.lengthSquared();
     int calcAngle = calculateElevation(distance);
     elevation = calcAngle;
 }
@@ -419,6 +419,7 @@ float ofApp::range(float e) {
     float g = 0.981;
     
     float calcDistance = ( ux / g ) * ( uy + sqrt ( uy*uy + 2*g*h ) ) ;
+    calcDistance *= calcDistance;
     return calcDistance;
 }
 /**

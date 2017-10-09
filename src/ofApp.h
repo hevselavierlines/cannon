@@ -71,7 +71,7 @@ public:
     
     // cannon ball --- TODO we could have an pool of balls instead
     YAMPE::Particle ball;
-    vector<YAMPE::Particle> balls;
+    vector<YAMPE::Particle::Ref> balls;
     ofVec3f target;         //< target - note y coordinate is zero
     float energyError;
     
